@@ -1,0 +1,46 @@
+Buffalo golang codeplay 
+copyright 2019-20 sycliq.com www.territorialprescience.com
+awasekhirni@gmail.com www.territorialprescience.com 
+
+Buffalo framework 
+=> gorilla/mux framework 
+=> pop orm support for pgsql, mysql,sqlit
+=> plush templating engine similar to erb template syntax of ruby 
+=> packr go bundler for bundling 
+
+frontend 
+=> uses bootstrap 
+=> jquery
+=> webpack 
+
+
+installation
+1. scoop based installation ( similar to chocolatey)
+https://scoop.sh
+open powershell and execute the following code to install scoop on windows 
+# or shorter
+iwr -useb get.scoop.sh | iex
+//set the execution policy 
+Set-ExecutionPolicy RemoteSigned -scope CurrentUser
+
+2. install buffalo 
+scoop install buffalo 
+
+
+3. creating a new buffalo application 
+buffalo new appname 
+
+4. cd appname 
+
+modify => database.yml => database configuration for postgresql
+create database for the buffalo to use the database
+
+5. running the buffalo application 
+buffalo dev 
+// to run the server on a different port 
+PORT=9393 buffalo dev 
+
+http://localhost:3000
+
+
+
