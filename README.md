@@ -4,41 +4,46 @@ copyright 2014-2019 Dr. Syed Awase Khirni
 
 
 Using Go Modules to create Projects 
-//creating a project using go modules 
+#creating a project using go modules 
+
 go mod init project 
 
-//adding dependencies 
+#adding dependencies 
+
 go get github.com/julienschmidt/httprouter@v1.2
+
 go get go.uber.org/zap@latest
 
-//install/remoce dependency
+#install/remoce dependency
+
 go mod tidy
 
 
-//executing the 
+#executing the 
+
 go run src/main.go 
 
-//building 
+#building 
 go build src/main.go 
 
-//testing 
+#testing 
 go test 
 
-//cleaning the cache 
+#cleaning the cache 
 go clean -cache -modcache -i -r 
 
-//comptability with vendor director older versions of the go 
+#comptability with vendor director older versions of the go 
 go mod vendor 
 
-//fetch all the versions of specific go package 
+#fetch all the versions of specific go package 
 go list -m -versions go.uber.org/zap 
-# this would not work with vendor directory in place, remove the vendor directory if exists 
+// this would not work with vendor directory in place, remove the vendor directory if exists 
 
-// download all the dependencies 
+# download all the dependencies 
 go mod download 
 
-//
+#
 go env | grep "GOPROXY"
 
-// checksum go packages 
+# checksum go packages 
 go env | grep "GOSUMDB"
