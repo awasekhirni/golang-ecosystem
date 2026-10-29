@@ -1,0 +1,31 @@
+# Copyright 2025 β ORI Inc. Canada. All Rights Reserved.
+# Author: Awase Khirni Syed
+#
+# Prometheus scrape + rule config.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: hexagonal-go-local
+    env: development
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+rule_files:
+  - /etc/prometheus/alert_rules.yml
+
+scrape_configs:
+  - job_name: hexagonal-go
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8080"]
+        labels:
+          service: hexagonal-go
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

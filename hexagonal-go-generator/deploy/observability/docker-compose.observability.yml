@@ -1,0 +1,74 @@
+# Copyright 2025 β ORI Inc. Canada. All Rights Reserved.
+# Author: Awase Khirni Syed
+#
+# docker-compose.observability.yml - full local observability stack.
+#
+#   docker compose -f deploy/observability/docker-compose.observability.yml up -d
+#
+# Brings up: Prometheus, Grafana, Alertmanager, Jaeger, Loki, Promtail.
+# Scrape target: the hexagonal-go app (port 8080) — /metrics endpoint.
+#
+# GAP CLOSED: end-to-end local observability stack
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: hexgo-prometheus
+    volumes:
+      - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+    ports:
+      - "9090:9090"
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: hexgo-alertmanager
+    volumes:
+      - ../prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: hexgo-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_INSTALL_PLUGINS: ""
+    volumes:
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on: [prometheus, loki, jaeger]
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: hexgo-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"  # UI
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+
+  loki:
+    image: grafana/loki:3.2.0
+    container_name: hexgo-loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:3.2.0
+    container_name: hexgo-promtail
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/docker-config.yaml
+    depends_on: [loki]

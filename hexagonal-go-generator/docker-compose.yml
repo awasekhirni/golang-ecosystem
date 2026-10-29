@@ -1,0 +1,82 @@
+# Copyright 2025 β ORI Inc. Canada. All Rights Reserved.
+# Author: Awase Khirni Syed
+#
+# docker-compose.yml - one-command local stack: postgres + app + migrations.
+#
+#   docker compose up -d --build
+#   curl -s localhost:8080/healthz
+#
+# GAP CLOSED: #16 Dockerfile + docker-compose (Containerization)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hexgo-pg
+    environment:
+      POSTGRES_USER: awasekhirnisyed
+      POSTGRES_PASSWORD: YOUR_PASSWORD_GOESHERE
+      POSTGRES_DB: profxdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U awasekhirnisyed -d profxdb"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+
+  migrate:
+    build: .
+    container_name: hexgo-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://awasekhirnisyed:YOUR_PASSWORD_GOESHERE@postgres:5432/profxdb?sslmode=disable
+      APP_ENV: development
+      JWT_SECRET: change-me-to-a-32-byte-secret-please-xxxx
+    command: ["/app/migrate", "-direction=up"]
+    restart: "no"
+
+  app:
+    build: .
+    container_name: hexgo-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      APP_NAME: hexagonal-go
+      APP_ENV: development
+      APP_PORT: 8080
+      DEBUG: "true"
+      LOG_LEVEL: info
+      LOG_FORMAT: console
+      HTTP_READ_TIMEOUT: 15s
+      HTTP_WRITE_TIMEOUT: 20s
+      HTTP_IDLE_TIMEOUT: 60s
+      HTTP_SHUTDOWN_TIMEOUT: 30s
+      DATABASE_URL: postgres://awasekhirnisyed:YOUR_PASSWORD_GOESHERE@postgres:5432/profxdb?sslmode=disable
+      DB_POOL_SIZE: 10
+      DB_MAX_OVERFLOW: 20
+      DB_POOL_RECYCLE: 300s
+      DB_SLOW_QUERY_MS: 100
+      JWT_SECRET: change-me-to-a-32-byte-secret-please-xxxx
+      JWT_ISSUER: ori-inc
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 720h
+      API_KEYS: dev-key-1,dev-key-2
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8080
+      CORS_ALLOWED_METHODS: GET,POST,PUT,DELETE,PATCH,OPTIONS
+      RATE_LIMIT_RPS: 50
+      RATE_LIMIT_BURST: 100
+      LIVENESS_CHECK_DB: "true"
+      READINESS_CHECK_DB: "true"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

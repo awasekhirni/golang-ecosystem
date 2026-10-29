@@ -1,0 +1,103 @@
+{{- /* Copyright 2025 β ORI Inc. Canada. All Rights Reserved. Author: Awase Khirni Syed */ -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: {{ include "hexagonal-go.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext: {{ toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: APP_ENV
+              value: {{ .Values.config.app.env | quote }}
+            - name: APP_PORT
+              value: "8080"
+            - name: LOG_LEVEL
+              value: {{ .Values.config.app.logLevel | quote }}
+            - name: LOG_FORMAT
+              value: {{ .Values.config.app.logFormat | quote }}
+            - name: HTTP_SHUTDOWN_TIMEOUT
+              value: {{ .Values.config.http.shutdownTimeout | quote }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secret
+                  key: database-url
+            - name: DB_POOL_SIZE
+              value: {{ .Values.config.db.poolSize | quote }}
+            - name: DB_MAX_OVERFLOW
+              value: {{ .Values.config.db.maxOverflow | quote }}
+            - name: DB_SLOW_QUERY_MS
+              value: {{ .Values.config.db.slowQueryMs | quote }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secret
+                  key: jwt-secret
+            - name: JWT_ISSUER
+              value: {{ .Values.config.jwt.issuer | quote }}
+            - name: JWT_ACCESS_TTL
+              value: {{ .Values.config.jwt.accessTTL | quote }}
+            - name: API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secret
+                  key: api-keys
+            - name: RATE_LIMIT_RPS
+              value: {{ .Values.config.rate.limitRPS | quote }}
+            - name: RATE_LIMIT_BURST
+              value: {{ .Values.config.rate.limitBurst | quote }}
+          {{- if .Values.probes.startup.enabled }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.probes.startup.path }}
+              port: http
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+          {{- end }}
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          {{- end }}
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources: {{ toYaml . | nindent 12 }}
+          {{- end }}

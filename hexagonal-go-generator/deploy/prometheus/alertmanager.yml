@@ -1,0 +1,37 @@
+# Copyright 2025 β ORI Inc. Canada. All Rights Reserved.
+# Author: Awase Khirni Syed
+#
+# Alertmanager routing. Page-level alerts go to PagerDuty (or Slack in dev);
+# ticket-level alerts go to email.
+
+route:
+  receiver: default
+  group_by: [alertname, service, severity]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers: [severity="page"]
+      receiver: slack-page
+    - matchers: [severity="ticket"]
+      receiver: email-ticket
+
+receivers:
+  - name: default
+    webhook_configs:
+      - url: http://localhost:9099/
+
+  - name: slack-page
+    slack_configs:
+      - api_url: http://localhost:9099/
+        channel: "#hexgo-alerts"
+        send_resolved: true
+        title: '{{ .CommonLabels.alertname }}'
+        text: '{{ .CommonAnnotations.summary }}'
+
+  - name: email-ticket
+    email_configs:
+      - to: eng@ori-inc.ca
+        from: alertmanager@ori-inc.ca
+        smarthost: localhost:25
+        send_resolved: true

@@ -1,0 +1,27 @@
+# Copyright 2025 β ORI Inc. Canada. All Rights Reserved.
+# Author: Awase Khirni Syed
+#
+# CODEOWNERS - every PR must be approved by at least one owner.
+
+# Default owners for everything in the repo
+*                           @awasekhirnisyed
+
+# Domain layer - needs DDD expertise
+/internal/domain/           @awasekhirnisyed
+
+# Infrastructure - needs DB + ops expertise
+/internal/infrastructure/   @awasekhirnisyed
+
+# Security-sensitive paths - needs security review
+/internal/middleware/       @awasekhirnisyed
+/internal/infrastructure/auth/ @awasekhirnisyed
+/SECURITY.md                @awasekhirnisyed
+
+# CI/CD + deploy
+/.github/                   @awasekhirnisyed
+/deploy/                    @awasekhirnisyed
+/Dockerfile                 @awasekhirnisyed
+/docker-compose.yml         @awasekhirnisyed
+
+# Docs
+/docs/cmmi/                 @awasekhirnisyed

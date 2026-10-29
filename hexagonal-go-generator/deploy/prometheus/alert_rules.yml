@@ -1,0 +1,76 @@
+# Copyright 2025 β ORI Inc. Canada. All Rights Reserved.
+# Author: Awase Khirni Syed
+#
+# Prometheus alerting rules. Derived from the SLOs in
+# docs/architecture/slo_sli.md.
+
+groups:
+  - name: hexagonal-go
+    interval: 30s
+    rules:
+      # --- availability SLO: 99.9% over 30 days ----------------------------
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(http_requests_total[5m])) > 0.01
+        for: 5m
+        labels:
+          severity: page
+          slo: availability
+        annotations:
+          summary: "5xx error rate > 1% for 5 minutes"
+          description: "Current 5xx rate is {{ $value | humanizePercentage }}; SLO budget at risk."
+
+      # --- latency SLO: p99 < 500ms -----------------------------------------
+      - alert: HighLatencyP99
+        expr: |
+          histogram_quantile(0.99,
+            sum by (route, le) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: page
+          slo: latency
+        annotations:
+          summary: "p99 latency > 500ms for 10 minutes on {{ $labels.route }}"
+
+      # --- enterprise bus reliability ---------------------------------------
+      - alert: BusDispatchErrors
+        expr: rate(bus_dispatch_errors_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Enterprise bus handler failures on topic {{ $labels.topic }}"
+
+      # --- DB pool saturation -----------------------------------------------
+      - alert: DBPoolSaturation
+        # pgx doesn't export this directly; substitute the gauge from
+        # database/sql.Stats via a custom collector if available.
+        # For now we alert on slow-query count as a proxy.
+        expr: rate(db_queries_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "DB query rate very high (>100/s) — pool may saturate"
+
+      # --- slow queries -----------------------------------------------------
+      - alert: SlowQueries
+        expr: |
+          rate(db_query_duration_seconds_count{le="0.5"}[5m]) > 0
+        for: 5m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Slow DB queries (>500ms) detected"
+
+      # --- audit anomalies --------------------------------------------------
+      - alert: AuditDeleteSpike
+        expr: |
+          increase(audit_events_total{action=~"DELETE.*"}[1h]) > 100
+        for: 5m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Unusual DELETE audit volume (>100/hour) — investigate"

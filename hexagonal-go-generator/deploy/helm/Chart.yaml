@@ -1,0 +1,22 @@
+# Copyright 2025 β ORI Inc. Canada. All Rights Reserved.
+# Author: Awase Khirni Syed
+#
+# Helm chart for the Hexagonal Go service.
+# Install: helm install hexgo deploy/helm/
+
+apiVersion: v2
+name: hexagonal-go
+description: Hexagonal Go REST + GraphQL API with enterprise patterns
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+home: https://ori-inc.ca
+maintainers:
+  - name: Awase Khirni Syed
+    email: support@ori-inc.ca
+keywords:
+  - hexagonal
+  - ddd
+  - rest
+  - graphql
+  - postgres
